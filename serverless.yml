@@ -38,3 +38,18 @@ functions:
       - schedule:
           rate: rate(10 minutes)
           enabled: true
+  requestToken:
+    handler: src/api_handler.requestToken
+    description: Request Token for onboarding
+    events:
+     - http:
+         path: requestToken
+         method: post
+  onboard:
+    handler: src/api_handler.onboard
+    description: Onboard user to private network
+    events:
+     - http:
+         path: onboard
+         method: post
+

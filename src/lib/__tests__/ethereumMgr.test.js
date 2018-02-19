@@ -59,13 +59,6 @@ describe('EthereumMgr', () => {
         done();
     });
 
-    test('getProvider() rinkeby', (done) =>{
-        let p=sut.getProvider('rinkeby')
-        expect(p).not.toBeNull();
-        expect(p.host).toEqual("https://rinkeby.infura.io/")
-        done();
-    })
-
     describe('getBalance()', () => {
 
         test('no address', (done) =>{
