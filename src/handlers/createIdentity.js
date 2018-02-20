@@ -1,5 +1,5 @@
 
-class OnboardHandler {
+class CreateIdentityHandler {
     constructor (uPortMgr,identityManagerMgr) {
         this.uPortMgr = uPortMgr
         this.identityManagerMgr = identityManagerMgr
@@ -65,7 +65,7 @@ class OnboardHandler {
         }
 
         //Create Identity
-        const idCreationtxHash;
+        let idCreationtxHash;
         try{
             console.log("calling identityManagerMgr.createIdentity")
             let identityOpts={
@@ -113,9 +113,9 @@ class OnboardHandler {
 
         //Push network definition to mobile app
 
-        cb(null,mnid)
+        cb(null,netDef)
     }
 
   }
 
-  module.exports = OnboardHandler
+  module.exports = CreateIdentityHandler

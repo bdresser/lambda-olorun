@@ -45,11 +45,11 @@ functions:
      - http:
          path: requestToken
          method: post
-  onboard:
-    handler: src/api_handler.onboard
-    description: Onboard user to private network
+  createIdentity:
+    handler: src/api_handler.createIdentity
+    description: createIdentity on private network
     events:
      - http:
-         path: onboard
+         path: createIdentity
          method: post
 

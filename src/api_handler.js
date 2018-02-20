@@ -2,29 +2,35 @@
 const AWS = require('aws-sdk');
 
 const UPortMgr = require('./lib/uPortMgr')
-const OnboardMgr = require('./lib/onboardMgr')
+const EthereumMgr = require('./lib/ethereumMgr')
+const IdentityManagerMgr = require('./lib/identityManagerMgr')
 
 const RequestTokenHandler = require('./handlers/requestToken')
-const OnboardHandler = require('./handlers/onboard')
+const CreateIdentityHandler = require('./handlers/createIdentity')
 
 let uPortMgr = new UPortMgr()
-let onboardMgr = new OnboardMgr()
+let ethereumMgr = new EthereumMgr()
+let identityManagerMgr = new IdentityManagerMgr(ethereumMgr)
 
 let requestTokenHandler = new RequestTokenHandler(uPortMgr)
-let onboardHandler = new OnboardHandler(uPortMgr,onboardMgr)
+let createIdentityHandler = new CreateIdentityHandler(uPortMgr,identityManagerMgr)
 
 module.exports.requestToken = (event, context, callback) => { preHandler(requestTokenHandler,event,context,callback) }
-module.exports.onboard = (event, context, callback) => { preHandler(onboardHandler,event,context,callback) }
+module.exports.createIdentity = (event, context, callback) => { preHandler(createIdentityHandler,event,context,callback) }
 
 const preHandler = (handler,event,context,callback) =>{
   console.log(event)
-  if(!uPortMgr.isSecretsSet()){
+  if(!ethereumMgr.isSecretsSet() ||
+     !uPortMgr.isSecretsSet() || 
+     !identityManagerMgr.isSecretsSet()){
     const kms = new AWS.KMS();
     kms.decrypt({
       CiphertextBlob: Buffer(process.env.SECRETS, 'base64')
     }).promise().then(data => {
       const decrypted = String(data.Plaintext)
       uPortMgr.setSecrets(JSON.parse(decrypted))
+      ethereumMgr.setSecrets(JSON.parse(decrypted))
+      identityManagerMgr.setSecrets(JSON.parse(decrypted))
       doHandler(handler,event,context,callback)
     })
   }else{
