@@ -24,6 +24,7 @@ class UPortMgr {
         let requestOpts={
             notifications: true,
             callbackUrl: this.callbackUrl,
+            accountType: 'devicekey'
             //exp: 1512529200
         }
         return this.credentials.createRequest(requestOpts);

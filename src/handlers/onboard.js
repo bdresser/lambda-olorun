@@ -1,8 +1,8 @@
 
 class OnboardHandler {
-    constructor (uPortMgr,onboardMgr) {
+    constructor (uPortMgr,identityManagerMgr) {
         this.uPortMgr = uPortMgr
-        this.onboardMgr = onboardMgr
+        this.identityManagerMgr = identityManagerMgr
     }
 
     async handle(event,context, cb) {
@@ -36,7 +36,7 @@ class OnboardHandler {
             console.log("<profile>");
             console.log(profile);
             console.log("</profile>");
-            deviceKey=profile.address //TODO: Change. This is not right!!!
+            deviceKey='0x1' //profile.address //TODO: Change. This is not right!!!
         } catch (error){
             console.log("Error on this.uPortMgr.receiveAccessToken")
             console.log(error)
@@ -45,17 +45,72 @@ class OnboardHandler {
         } 
       
 
-        //Create new identity on private network
-        let mnid
+        //Check if the deviceKey has created an identity already
+        let idCreationObj; 
         try{
-            mnid=await this.onboardMgr.onboard(deviceKey);
-        } catch (error){
-            console.log("Error on this.onboardMgr.onboard")
-            console.log(error)
-            cb({code: 500, message: error.message})
+            console.log("calling identityManagerMgr.getIdentityCreation")
+            idCreationObj = await this.identityManagerMgr.getIdentityCreation(deviceKey) 
+        } catch(err) {
+            console.log("Error on this.identityManagerMgr.getIdentityCreation")
+            console.log(err)
+            cb({ code: 500, message: err })
             return;
         }
+
+        if(idCreationObj){
+            const mess="deviceKey already used. On tx: "+idCreationObj.tx_hash
+            console.log(mess)
+            cb({code: 400, message: mess})
+            return;
+        }
+
+        //Create Identity
+        const idCreationtxHash;
+        try{
+            console.log("calling identityManagerMgr.createIdentity")
+            let identityOpts={
+                deviceKey: deviceKey,
+                recoveryKey: deviceKey,
+                managerType: 'MetaIdentityManager',
+                blockchain: 'msft'
+            }
+            const {managerAddress,txHash} = await this.identityManagerMgr.createIdentity(identityOpts) 
+            console.log("managerAddress:"+managerAddress)
+            console.log("txHash:"+txHash)
+
+            idCreationtxHash = txHash;
+
+        } catch(err) {
+            console.log("Error on this.identityManagerMgr.createIdentity")
+            console.log(err)
+            cb({ code: 500, message: err.message })
+            return;
+        }
+
+        //Wait for identity to be created
+
+        //while(idAddres!=null)
+        //let idAddress=await this.identityManagerMgr.getIdentityFromTxHash(idCreationtxHash,'msft')
         
+        //Prepare network def
+        let netDef={
+            /*
+            aud: encode({
+              network: '0x3',
+              address: onboard.address
+            }),
+            */
+            sub: encode({
+              network: '0x1957', //Change to MSFT network id
+              address: idAddress
+            }),
+            gw: 'http://104.214.116.254:8545/',
+            rel: "https://api.uport.space/olorun/relay",
+            //ctl: onboard.controllerAddress,
+        }
+
+        //Sign netDef
+
         //Push network definition to mobile app
 
         cb(null,mnid)
