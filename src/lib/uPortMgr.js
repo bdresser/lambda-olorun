@@ -25,13 +25,16 @@ class UPortMgr {
             notifications: true,
             callbackUrl: this.callbackUrl,
             accountType: 'devicekey'
-            //exp: 1512529200
         }
         return this.credentials.createRequest(requestOpts);
     }
 
     async receiveAccessToken(accessToken){
         return this.credentials.receive(accessToken);
+    }
+
+    async createPrivateChainProvisioning(privProv){
+        
     }
 
     async push(pushToken, pubEncKey, url){

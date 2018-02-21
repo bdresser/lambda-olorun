@@ -1,3 +1,4 @@
+import { encode } from 'mnid'
 
 class CreateIdentityHandler {
     constructor (uPortMgr,identityManagerMgr) {
@@ -27,6 +28,8 @@ class CreateIdentityHandler {
             return;
         }
 
+        const networkName='msft' //This can be read from the url? Hardcoded for now
+
         console.log("access_token:"+body.access_token);
 
         //Get deviceKey from access_token
@@ -52,18 +55,20 @@ class CreateIdentityHandler {
 
         //Create Identity
         let idCreationtxHash;
+        let metaIdentityManagerAddress;
         try{
             console.log("calling identityManagerMgr.createIdentity")
             let identityOpts={
                 deviceKey: deviceKey,
                 managerType: 'MetaIdentityManager',
-                blockchain: 'msft'
+                blockchain: networkName
             }
             const {managerAddress,txHash} = await this.identityManagerMgr.createIdentity(identityOpts) 
             console.log("managerAddress:"+managerAddress)
             console.log("txHash:"+txHash)
 
             idCreationtxHash = txHash;
+            metaIdentityManagerAddress=managerAddress;
 
         } catch(err) {
             console.log("Error on this.identityManagerMgr.createIdentity")
@@ -73,12 +78,27 @@ class CreateIdentityHandler {
         }
 
         //Wait for identity to be created
+        const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        //while(idAddres!=null)
-        //let idAddress=await this.identityManagerMgr.getIdentityFromTxHash(idCreationtxHash,'msft')
+        let idAddress=null;
+        while(idAddress==null){
+            try{
+                console.log("Waiting 1000 ms")
+                await wait(1000);
+                console.log("calling identityManagerMgr.getIdentityFromTxHash")
+                idAddress=await this.identityManagerMgr.getIdentityFromTxHash(idCreationtxHash,networkName)
+                console.log("idAddress:"+idAddress)
+            } catch(err) {
+                console.log("Error on this.identityManagerMgr.getIdentityFromTxHash")
+                console.log(err)
+                cb({ code: 500, message: err.message })
+                return;
+            }
+        }
+
         
-        //Prepare network def
-        let netDef={
+        //Prepare Private Chain Provisioning Message
+        let privProv={
             /*
             aud: encode({
               network: '0x3',
@@ -86,19 +106,21 @@ class CreateIdentityHandler {
             }),
             */
             sub: encode({
-              network: '0x1957', //Change to MSFT network id
-              address: idAddress
+                network: '0x3039',
+                address: idAddress
             }),
-            gw: 'http://104.214.116.254:8545/',
+            dad: deviceKey,
+            ctl: metaIdentityManagerAddress,
             rel: "https://api.uport.space/olorun/relay",
-            //ctl: onboard.controllerAddress,
+            acc: '',
+            gw: 'http://104.214.116.254:8545/'
         }
-
+    
         //Sign netDef
 
         //Push network definition to mobile app
 
-        cb(null,netDef)
+        cb(null,privProv)
     }
 
   }
