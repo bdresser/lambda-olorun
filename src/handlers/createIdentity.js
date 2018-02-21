@@ -32,10 +32,12 @@ class CreateIdentityHandler {
         //Get deviceKey from access_token
         let deviceKey;
         try{
+            /*
             let profile=await this.uPortMgr.receiveAccessToken(body.access_token);
             console.log("<profile>");
             console.log(profile);
             console.log("</profile>");
+            */
             deviceKey='0x1' //profile.address //TODO: Change. This is not right!!!
         } catch (error){
             console.log("Error on this.uPortMgr.receiveAccessToken")
@@ -45,24 +47,8 @@ class CreateIdentityHandler {
         } 
       
 
-        //Check if the deviceKey has created an identity already
-        let idCreationObj; 
-        try{
-            console.log("calling identityManagerMgr.getIdentityCreation")
-            idCreationObj = await this.identityManagerMgr.getIdentityCreation(deviceKey) 
-        } catch(err) {
-            console.log("Error on this.identityManagerMgr.getIdentityCreation")
-            console.log(err)
-            cb({ code: 500, message: err })
-            return;
-        }
-
-        if(idCreationObj){
-            const mess="deviceKey already used. On tx: "+idCreationObj.tx_hash
-            console.log(mess)
-            cb({code: 400, message: mess})
-            return;
-        }
+        //Check if the deviceKey has created an identity already ?
+       
 
         //Create Identity
         let idCreationtxHash;
@@ -70,7 +56,6 @@ class CreateIdentityHandler {
             console.log("calling identityManagerMgr.createIdentity")
             let identityOpts={
                 deviceKey: deviceKey,
-                recoveryKey: deviceKey,
                 managerType: 'MetaIdentityManager',
                 blockchain: 'msft'
             }

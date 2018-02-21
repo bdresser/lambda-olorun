@@ -1,4 +1,5 @@
 import { IdentityManager, MetaIdentityManager} from 'uport-identity'
+import uportIdentityAddress from './uport-identity-address'
 import Promise from 'bluebird'
 import { Client } from 'pg'
 import abi from 'ethjs-abi'
@@ -41,7 +42,13 @@ class IdentityManagerMgr {
 
     if (!idMgrs[networkName]) {
       let abi = idMgrArtifact.abi
-      let imAddr = idMgrArtifact.networks[this.ethereumMgr.getNetworkId(networkName)].address
+      let imAddr;
+      if(idMgrArtifact.networks[this.ethereumMgr.getNetworkId(networkName)]){
+        imAddr = idMgrArtifact.networks[this.ethereumMgr.getNetworkId(networkName)].address
+      } else {
+        imAddr = uportIdentityAddress[networkName][managerType]
+      }
+      
       let IdMgrContract = this.ethereumMgr.getContract(abi,networkName)
       idMgrs[networkName] = IdMgrContract.at(imAddr)
       idMgrs[networkName] = Promise.promisifyAll(idMgrs[networkName])
@@ -90,9 +97,9 @@ class IdentityManagerMgr {
     }
 
     if (payload) {
-      ret.txHash=await idMgrs[blockchain].createIdentityWithCallAsync(deviceKey, recoveryKey, payload.destination, payload.data, txOptions)
+      ret.txHash=await idMgrs[blockchain].createIdentityWithCallAsync(deviceKey, recoveryKeyFix, payload.destination, payload.data, txOptions)
     } else {
-      ret.txHash= await idMgrs[blockchain].createIdentityAsync(deviceKey, recoveryKey, txOptions)
+      ret.txHash= await idMgrs[blockchain].createIdentityAsync(deviceKey, recoveryKeyFix, txOptions)
     }
 
     await this.storeIdentityCreation(deviceKey, ret.txHash, blockchain, managerType, ret.managerAddress)

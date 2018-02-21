@@ -1,6 +1,6 @@
 module.exports = {
   msft: {
-    id: '1',
+    id: '12345',
     rpcUrl: 'http://104.214.116.254:8545/'
   }
 }
