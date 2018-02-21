@@ -1,21 +1,27 @@
 import { Credentials, SimpleSigner } from 'uport'
+import { createJWT } from 'uport/lib/JWT'
+
 
 class UPortMgr {
 
     constructor() {
+        this.signer=null;
+        this.address=null;
         this.credentials=null;
         this.callbackUrl=null;
     }
 
     isSecretsSet(){
-        return (this.credentials !== null || this.callbackUrl !== null);
+        return (this.signer !== null || this.credentials !== null || this.callbackUrl !== null);
     }
 
     setSecrets(secrets){
+        this.signer = SimpleSigner(secrets.SIGNER_KEY)
+        this.address = secrets.APP_MNID;
         this.credentials = new Credentials({
           appName: secrets.APP_NAME,
-          address: secrets.APP_MNID,
-          signer:  SimpleSigner(secrets.SIGNER_KEY)
+          address: this.address,
+          signer:  this.signer
         })
         this.callbackUrl=secrets.CALLBACK_URL
     }
@@ -33,8 +39,8 @@ class UPortMgr {
         return this.credentials.receive(accessToken);
     }
 
-    async createPrivateChainProvisioning(privProv){
-        
+    async signJWT(payload){
+        return createJWT({address:this.address, signer:this.signer},payload)
     }
 
     async push(pushToken, pubEncKey, url){

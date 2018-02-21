@@ -29,19 +29,19 @@ class CreateIdentityHandler {
         }
 
         const networkName='msft' //This can be read from the url? Hardcoded for now
+        const netwokrId='0x3039'
 
         console.log("access_token:"+body.access_token);
 
         //Get deviceKey from access_token
         let deviceKey;
+        let profile;
         try{
-            /*
-            let profile=await this.uPortMgr.receiveAccessToken(body.access_token);
+            profile=await this.uPortMgr.receiveAccessToken(body.access_token);
             console.log("<profile>");
             console.log(profile);
             console.log("</profile>");
-            */
-            deviceKey='0x1' //profile.address //TODO: Change. This is not right!!!
+            deviceKey='0x1' //TODO: Change. This is not right!!!
         } catch (error){
             console.log("Error on this.uPortMgr.receiveAccessToken")
             console.log(error)
@@ -78,7 +78,7 @@ class CreateIdentityHandler {
         }
 
         //Wait for identity to be created
-        const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const wait = (ms) => { new Promise(resolve => setTimeout(resolve, ms)) };
 
         let idAddress=null;
         while(idAddress==null){
@@ -99,28 +99,45 @@ class CreateIdentityHandler {
         
         //Prepare Private Chain Provisioning Message
         let privProv={
-            /*
-            aud: encode({
-              network: '0x3',
-              address: onboard.address
-            }),
-            */
+            aud: profile.address,
             sub: encode({
-                network: '0x3039',
+                network: netwokrId,
                 address: idAddress
             }),
             dad: deviceKey,
             ctl: metaIdentityManagerAddress,
-            rel: "https://api.uport.space/olorun/relay",
+            rel: "https://api.uport.space/olorun/relay", //TODO: Make this a parameter
             acc: '',
-            gw: 'http://104.214.116.254:8545/'
+            gw: 'http://104.214.116.254:8545/' //TODO: is this needed?
         }
     
-        //Sign netDef
+        //Sign privProv
+        let signedPrivProv;
+        try{
+            console.log("calling uPortMgr.signJWT")
+            signedPrivProv=await this.uPortMgr.signJWT(privProv);
+        } catch (error){
+            console.log("Error on this.uPortMgr.signJWT")
+            console.log(error)
+            cb({code: 500, message: error.message})
+            return;
+        }
+        console.log(signedPrivProv);
 
         //Push network definition to mobile app
+        const privProvUrl='me.uport:net/'+signedPrivProv
+        try{
+            console.log("calling uPortMgr.push")
+            await this.uPortMgr.push(profile.pushToken, profile.publicEncKey,privProvUrl);
+            console.log("pushed.")
+        } catch (error){
+            console.log("Error on this.uPortMgr.push")
+            console.log(error)
+            cb({code: 500, message: error.message})
+            return;
+        }
 
-        cb(null,privProv)
+        cb(null,signedPrivProv)
     }
 
   }
