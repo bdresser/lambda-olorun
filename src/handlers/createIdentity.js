@@ -41,7 +41,7 @@ class CreateIdentityHandler {
             console.log("<profile>");
             console.log(profile);
             console.log("</profile>");
-            deviceKey='0x1' //TODO: Change. This is not right!!!
+            deviceKey=profile.deviceKey
         } catch (error){
             console.log("Error on this.uPortMgr.receiveAccessToken")
             console.log(error)
