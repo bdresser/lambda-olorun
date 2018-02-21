@@ -30,7 +30,8 @@ class UPortMgr {
         let requestOpts={
             notifications: true,
             callbackUrl: this.callbackUrl,
-            accountType: 'devicekey'
+            accountType: 'devicekey',
+            exp: 1522540800 // Sunday, 1 de April de 2018 0:00:00 GMT
         }
         return this.credentials.createRequest(requestOpts);
     }
