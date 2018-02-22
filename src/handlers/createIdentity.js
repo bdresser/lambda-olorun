@@ -78,13 +78,13 @@ class CreateIdentityHandler {
         }
 
         //Wait for identity to be created
-        const wait = (ms) => { new Promise(resolve => setTimeout(resolve, ms)) };
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
         let idAddress=null;
         while(idAddress==null){
             try{
                 console.log("Waiting 1000 ms")
-                await wait(1000);
+                await delay(1000);
                 console.log("calling identityManagerMgr.getIdentityFromTxHash")
                 idAddress=await this.identityManagerMgr.getIdentityFromTxHash(idCreationtxHash,networkName)
                 console.log("idAddress:"+idAddress)
