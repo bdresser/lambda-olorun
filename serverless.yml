@@ -53,4 +53,11 @@ functions:
      - http:
          path: createIdentity
          method: post
+  relay:
+    handler: src/api_handler.relay
+    description: Relay handler
+    events:
+     - http:
+         path: relay
+         method: post
 
