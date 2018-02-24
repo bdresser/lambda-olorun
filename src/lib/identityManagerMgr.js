@@ -1,5 +1,5 @@
 import { IdentityManager, MetaIdentityManager} from 'uport-identity'
-import uportIdentityAddress from './uport-identity-address'
+import privateUportContracts from './private-uport-contracts'
 import Promise from 'bluebird'
 import { Client } from 'pg'
 import abi from 'ethjs-abi'
@@ -42,11 +42,13 @@ class IdentityManagerMgr {
 
     if (!idMgrs[networkName]) {
       let abi = idMgrArtifact.abi
+
+      //Private network support
       let imAddr;
       if(idMgrArtifact.networks[this.ethereumMgr.getNetworkId(networkName)]){
         imAddr = idMgrArtifact.networks[this.ethereumMgr.getNetworkId(networkName)].address
       } else {
-        imAddr = uportIdentityAddress[networkName][managerType]
+        imAddr = privateUportContracts[networkName][managerType]
       }
       
       let IdMgrContract = this.ethereumMgr.getContract(abi,networkName)

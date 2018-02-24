@@ -5,8 +5,11 @@ class RequestTokenHandler {
     }
   
     async handle(event,context, cb) {
+
+      const networkId='0x3039' //This can be read from the url? Hardcoded for now
+
       try{
-        let requestToken= await this.uPortMgr.requestToken();
+        let requestToken= await this.uPortMgr.requestToken(networkId);
         let request='me.uport:me?requestToken='+requestToken
         cb(null,request)
       } catch (error){

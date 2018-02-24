@@ -29,7 +29,7 @@ class CreateIdentityHandler {
         }
 
         const networkName='msft' //This can be read from the url? Hardcoded for now
-        const netwokrId='0x3039'
+        const networkId='0x3039'
 
         console.log("access_token:"+body.access_token);
 
@@ -101,7 +101,7 @@ class CreateIdentityHandler {
         let privProv={
             aud: profile.address,
             sub: encode({
-                network: netwokrId,
+                network: networkId,
                 address: idAddress
             }),
             dad: deviceKey,
