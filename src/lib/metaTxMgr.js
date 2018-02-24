@@ -1,9 +1,10 @@
 import { TxRelay } from 'uport-identity'
+import uportIdentityAddress from './uport-identity-address'
 import Contract from 'truffle-contract'
 import { signers } from 'eth-signer'
 
 
-const txRelayArtifact = TxRelay.v2
+let txRelayArtifact = TxRelay.v2
 const TxRelaySigner = signers.TxRelaySigner
 
 class MetaTxMgr {
@@ -16,6 +17,16 @@ class MetaTxMgr {
   async initTxRelayer(networkName) {
     if(!networkName) throw('no networkName')
     if (!this.txRelayers[networkName]) {
+
+      //Private network support
+      let networkId = this.ethereumMgr.getNetworkId(networkName)
+      if(!txRelayArtifact.networks[networkId].address){
+        txRelayArtifact.networks[networkId] = {
+          address: uportIdentityAddress[networkName].TxRelay,
+          links: {}
+        }
+      }
+
       let TxRelayContract = new Contract(txRelayArtifact)
       let provider=this.ethereumMgr.getProvider(networkName)
       if(provider==null) throw ('null provider')
