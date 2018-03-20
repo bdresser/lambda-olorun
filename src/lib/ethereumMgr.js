@@ -1,4 +1,3 @@
-import networks from './networks'
 import Web3 from 'web3'
 import Promise from 'bluebird'
 import { generators, signers } from 'eth-signer'
@@ -8,11 +7,10 @@ import SignerProvider from 'ethjs-provider-signer'
 
 const HDSigner = signers.HDSigner
 
-const DEFAULT_GAS_PRICE = 20000000000 // 20 Gwei
-
 class EthereumMgr {
 
-  constructor() {
+  constructor(blockchainMgr) {
+    this.blockchainMgr=blockchainMgr
     this.pgUrl=null
     this.seed=null
 
@@ -43,65 +41,64 @@ class EthereumMgr {
         accounts: (cb) => cb(null, [this.signer.getAddress()]),
       }
 
-      for (const network in networks) {
-        let provider = new SignerProvider(networks[network].rpcUrl,txSigner);
+      const supportedNetworkIds = this.blockchainMgr.getSupportedNetworkIds()
+
+      for (const networkId in supportedNetworkIds) {
+        let rpcUrl = this.blockchainMgr.getRpcUrl(networkId);
+
+        let provider = new SignerProvider(rpcUrl,txSigner);
         let web3 = new Web3(provider)
         web3.eth = Promise.promisifyAll(web3.eth)
-        this.web3s[network] = web3
+        this.web3s[networkId] = web3
 
-        this.gasPrices[network]= DEFAULT_GAS_PRICE;
+        this.gasPrices[networkId]= this.blockchainMgr.getDefaultGasPrice(networkId);
       }
   }
 
-  getProvider(networkName) {
-    if(!this.web3s[networkName]) return null;
-    return this.web3s[networkName].currentProvider
+  getProvider(networkId) {
+    if(!this.web3s[networkId]) return null;
+    return this.web3s[networkId].currentProvider
   }
 
   getAddress(){
     return this.signer.getAddress()
   }
 
-  getNetworkId(networkName){
-    if(!networkName) throw('no networkName')
-    return networks[networkName].id
-  }
-
-  getContract(abi,networkName){
+  getContract(abi,networkId){
     if(!abi) throw('no abi')
-    if(!networkName) throw('no networkName')
-    if(!this.web3s[networkName]) throw('no web3 for networkName')
-    return this.web3s[networkName].eth.contract(abi)
+    if(!networkId) throw('no networkId')
+    if(!this.web3s[networkId]) throw('no web3 for networkId')
+    return this.web3s[networkId].eth.contract(abi)
   }
 
-  async getTransactionReceipt(txHash,networkName){
+  async getTransactionReceipt(txHash,networkId){
     if(!txHash) throw('no txHash')
-    if(!networkName) throw('no networkName')
-    if(!this.web3s[networkName]) throw('no web3 for networkName')
-    return await this.web3s[networkName].eth.getTransactionReceiptAsync(txHash)
+    if(!networkId) throw('no networkId')
+    if(!this.web3s[networkId]) throw('no web3 for networkId')
+    return await this.web3s[networkId].eth.getTransactionReceiptAsync(txHash)
   }
 
 
-  async getBalance(address, networkName) {
+  async getBalance(address, networkId) {
     if(!address) throw('no address')
-    if(!networkName) throw('no networkName')
-    if(!this.web3s[networkName]) throw('no web3 for networkName')
-    return await this.web3s[networkName].eth.getBalanceAsync(address)
+    if(!networkId) throw('no networkId')
+    if(!this.web3s[networkId]) throw('no web3 for networkId')
+    return await this.web3s[networkId].eth.getBalanceAsync(address)
   }
 
-  async getGasPrice(networkName) {
-    if(!networkName) throw('no networkName')
+  async getGasPrice(networkId) {
+    if(!networkId) throw('no networkId')
     try {
-      this.gasPrices[networkName] = (await this.web3s[networkName].eth.getGasPriceAsync()).toNumber()
+      this.gasPrices[networkId] = (await this.web3s[networkId].eth.getGasPriceAsync()).toNumber()
     } catch (e) {
       console.log(e)
     }
-    return this.gasPrices[networkName]
+    return this.gasPrices[networkId]
   }
 
-  async getNonce(address, networkName) {
+  async getNonce(address, networkId) {
     if(!address) throw('no address')
-    if(!networkName) throw('no networkName')
+    if(!networkId) throw('no networkId')
     if(!this.pgUrl) throw('no pgUrl set')
 
     const client = new Client({
@@ -118,7 +115,7 @@ class EthereumMgr {
             WHERE nonces.address=$1 \
               AND nonces.network=$2 \
         RETURNING nonce;"
-            , [address, networkName]);
+            , [address, networkId]);
         return res.rows[0].nonce;
     } catch (e){
         throw(e);

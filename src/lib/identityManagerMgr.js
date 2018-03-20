@@ -1,17 +1,16 @@
 import { IdentityManager, MetaIdentityManager} from 'uport-identity'
-import privateUportContracts from './private-uport-contracts'
 import Promise from 'bluebird'
 import { Client } from 'pg'
 import abi from 'ethjs-abi'
 
 class IdentityManagerMgr {
 
-  constructor(ethereumMgr) {
+  constructor(ethereumMgr,blockchainMgr) {
     this.identityManagers = {}
     this.metaIdentityManagers = {}
     this.ethereumMgr=ethereumMgr;
+    this.blockchainMgr=blockchainMgr;
     this.pgUrl=null
-
   }
 
   isSecretsSet(){
@@ -22,9 +21,9 @@ class IdentityManagerMgr {
     this.pgUrl=secrets.PG_URL;
   }
 
-  async initIdentityManager(managerType,networkName) {
+  async initIdentityManager(managerType,networkId) {
     if(!managerType) throw('no managerType')
-    if(!networkName) throw('no networkName')
+    if(!networkId) throw('no networkId')
 
     let idMgrs,idMgrArtifact;
     switch(managerType){
@@ -40,24 +39,17 @@ class IdentityManagerMgr {
         throw('invalid managerType')
     }
 
-    if (!idMgrs[networkName]) {
+    if (!idMgrs[networkId]) {
       let abi = idMgrArtifact.abi
 
-      //Private network support
-      let imAddr;
-      if(idMgrArtifact.networks[this.ethereumMgr.getNetworkId(networkName)]){
-        imAddr = idMgrArtifact.networks[this.ethereumMgr.getNetworkId(networkName)].address
-      } else {
-        imAddr = privateUportContracts[networkName][managerType]
-      }
-      
-      let IdMgrContract = this.ethereumMgr.getContract(abi,networkName)
-      idMgrs[networkName] = IdMgrContract.at(imAddr)
-      idMgrs[networkName] = Promise.promisifyAll(idMgrs[networkName])
+      let imAddr=blockchainMgr.getIdentityManagerAddress(networkId,managerType);
+      let IdMgrContract = this.ethereumMgr.getContract(abi,networkId)
+      idMgrs[networkId] = IdMgrContract.at(imAddr)
+      idMgrs[networkId] = Promise.promisifyAll(idMgrs[networkId])
     }
   }
 
-  async createIdentity({deviceKey, recoveryKey, blockchain, managerType, payload}) {
+  async createIdentity({deviceKey, recoveryKey, networkId, managerType, payload}) {
     if(!deviceKey) throw('no deviceKey')
     if(!managerType) throw('no managerType')
     if (payload && !payload.destination) throw('payload but no payload.destination')
@@ -84,34 +76,34 @@ class IdentityManagerMgr {
     }
 
 
-    await this.initIdentityManager(managerType,blockchain)
-    let from = this.ethereumMgr.getAddress() //TODO: read from provider
+    await this.initIdentityManager(managerType,networkId)
+    let from = this.ethereumMgr.getAddress() 
     let txOptions = {
       from: from,
       gas: 3000000,
-      gasPrice: await this.ethereumMgr.getGasPrice(blockchain),
-      nonce: await this.ethereumMgr.getNonce(from,blockchain)
+      gasPrice: await this.ethereumMgr.getGasPrice(networkId),
+      nonce: await this.ethereumMgr.getNonce(from,networkId)
     }
 
     //Return object
     let ret={
-      managerAddress: idMgrs[blockchain].address
+      managerAddress: idMgrs[networkId].address
     }
 
     if (payload) {
-      ret.txHash=await idMgrs[blockchain].createIdentityWithCallAsync(deviceKey, recoveryKeyFix, payload.destination, payload.data, txOptions)
+      ret.txHash=await idMgrs[networkId].createIdentityWithCallAsync(deviceKey, recoveryKeyFix, payload.destination, payload.data, txOptions)
     } else {
-      ret.txHash= await idMgrs[blockchain].createIdentityAsync(deviceKey, recoveryKeyFix, txOptions)
+      ret.txHash= await idMgrs[networkId].createIdentityAsync(deviceKey, recoveryKeyFix, txOptions)
     }
 
-    await this.storeIdentityCreation(deviceKey, ret.txHash, blockchain, managerType, ret.managerAddress)
+    await this.storeIdentityCreation(deviceKey, ret.txHash, networkId, managerType, ret.managerAddress)
     return ret;
   }
 
-  async storeIdentityCreation(deviceKey, txHash, networkName, managerType, managerAddress) {
+  async storeIdentityCreation(deviceKey, txHash, networkId, managerType, managerAddress) {
     if(!deviceKey) throw('no deviceKey')
     if(!txHash) throw('no txHash')
-    if(!networkName) throw('no networkName')
+    if(!networkName) throw('no networkId')
     if(!managerType) throw('no managerType')
     if(!managerAddress) throw('no managerAddress')
     if(!this.pgUrl) throw('no pgUrl set')
@@ -125,7 +117,7 @@ class IdentityManagerMgr {
         const res=await client.query(
             "INSERT INTO identities(device_key,tx_hash, network,manager_type,manager_address) \
              VALUES ($1,$2,$3,$4,$5) "
-            , [deviceKey, txHash, networkName, managerType, managerAddress]);
+            , [deviceKey, txHash, networkId, managerType, managerAddress]);
     } catch (e){
         throw(e);
     } finally {
@@ -158,12 +150,12 @@ class IdentityManagerMgr {
     }
   }
 
-  async getIdentityFromTxHash(txHash,blockchain){
+  async getIdentityFromTxHash(txHash,networkId){
     if(!txHash) throw('no txHash')
-    if(!blockchain) throw('no blockchain')
+    if(!networkId) throw('no networkId')
     if(!this.pgUrl) throw('no pgUrl set')
 
-    const txReceipt=await this.ethereumMgr.getTransactionReceipt(txHash,blockchain);
+    const txReceipt=await this.ethereumMgr.getTransactionReceipt(txHash,networkId);
     if(!txReceipt) return null;
 
     const decodedLogs = await this.decodeLogs(txReceipt)
@@ -200,8 +192,8 @@ class IdentityManagerMgr {
   }
 
 
-  async getTxData(txHash,blockchain){
-    await this.ethereumMgr.getTransaction(txHash,blockchain);
+  async getTxData(txHash,networkId){
+    await this.ethereumMgr.getTransaction(txHash,networkId);
   }
 
 
