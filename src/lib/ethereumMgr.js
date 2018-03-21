@@ -4,6 +4,7 @@ import Promise from 'bluebird'
 import { generators, signers } from 'eth-signer'
 import Transaction from 'ethereumjs-tx'
 import { Client } from 'pg'
+import SignerProvider from 'ethjs-provider-signer'
 
 const HDSigner = signers.HDSigner
 
@@ -16,17 +17,8 @@ class EthereumMgr {
     this.seed=null
 
     this.web3s = {}
-
     this.gasPrices = {}
 
-    for (const network in networks) {
-      let provider = new Web3.providers.HttpProvider(networks[network].rpcUrl)
-      let web3 = new Web3(provider)
-      web3.eth = Promise.promisifyAll(web3.eth)
-      this.web3s[network] = web3
-
-      this.gasPrices[network]= DEFAULT_GAS_PRICE;
-    }
   }
 
   isSecretsSet(){
@@ -34,11 +26,31 @@ class EthereumMgr {
   }
 
   setSecrets(secrets){
-    this.pgUrl=secrets.PG_URL;
-    this.seed=secrets.SEED;
+      this.pgUrl=secrets.PG_URL;
+      this.seed=secrets.SEED;
 
-    const hdPrivKey = generators.Phrase.toHDPrivateKey(this.seed)
-    this.signer = new HDSigner(hdPrivKey)
+      const hdPrivKey = generators.Phrase.toHDPrivateKey(this.seed)
+      this.signer = new HDSigner(hdPrivKey)
+
+      const txSigner= {
+        signTransaction: (tx_params, cb) => {
+          let tx = new Transaction(tx_params)
+          let rawTx = tx.serialize().toString('hex')
+          this.signer.signRawTx(rawTx,(err, signedRawTx) => {
+            cb(err,'0x'+signedRawTx)
+          })
+        },
+        accounts: (cb) => cb(null, [this.signer.getAddress()]),
+      }
+
+      for (const network in networks) {
+        let provider = new SignerProvider(networks[network].rpcUrl,txSigner);
+        let web3 = new Web3(provider)
+        web3.eth = Promise.promisifyAll(web3.eth)
+        this.web3s[network] = web3
+
+        this.gasPrices[network]= DEFAULT_GAS_PRICE;
+      }
   }
 
   getProvider(networkName) {
@@ -49,6 +61,26 @@ class EthereumMgr {
   getAddress(){
     return this.signer.getAddress()
   }
+
+  getNetworkId(networkName){
+    if(!networkName) throw('no networkName')
+    return networks[networkName].id
+  }
+
+  getContract(abi,networkName){
+    if(!abi) throw('no abi')
+    if(!networkName) throw('no networkName')
+    if(!this.web3s[networkName]) throw('no web3 for networkName')
+    return this.web3s[networkName].eth.contract(abi)
+  }
+
+  async getTransactionReceipt(txHash,networkName){
+    if(!txHash) throw('no txHash')
+    if(!networkName) throw('no networkName')
+    if(!this.web3s[networkName]) throw('no web3 for networkName')
+    return await this.web3s[networkName].eth.getTransactionReceiptAsync(txHash)
+  }
+
 
   async getBalance(address, networkName) {
     if(!address) throw('no address')
@@ -65,26 +97,6 @@ class EthereumMgr {
       console.log(e)
     }
     return this.gasPrices[networkName]
-  }
-
-  async estimateGas(tx, from, networkName) {
-    if(!tx) throw('no tx object')
-    if(!networkName) throw('no networkName')
-
-    //let tx = new Transaction(Buffer.from(txHex, 'hex'))
-    let txCopy = {
-      nonce: '0x' + (tx.nonce.toString('hex') || 0),
-      gasPrice: '0x' + tx.gasPrice.toString('hex'),
-      to: '0x' + tx.to.toString('hex'),
-      value: '0x' + (tx.value.toString('hex') || 0),
-      data: '0x' + tx.data.toString('hex'),
-      from
-    }
-    let price = 3000000
-    try {
-      price = await this.web3s[networkName].eth.estimateGasAsync(txCopy)
-    } catch (error) {}
-    return price
   }
 
   async getNonce(address, networkName) {
@@ -116,49 +128,7 @@ class EthereumMgr {
   }
 
 
-  async signTx({txHex, blockchain}) {
-    if(!txHex) throw('no txHex')
-    if(!blockchain) throw('no blockchain')
-    let tx = new Transaction(Buffer.from(txHex, 'hex'))
-    tx.gasPrice = await this.getGasPrice(blockchain)
-    tx.nonce = await this.getNonce(this.signer.getAddress(), blockchain)
-    const estimatedGas = await this.estimateGas(tx, this.signer.getAddress(), blockchain)
-    // add some buffer to the limit
-    tx.gasLimit = estimatedGas + 1000
-    //console.log('limit', parseInt(tx.gasLimit.toString('hex'), 16))
 
-    const rawTx = tx.serialize().toString('hex')
-    return new Promise((resolve, reject) => {
-      this.signer.signRawTx(rawTx, (error, signedRawTx) => {
-        if (error) {
-          reject(error)
-        }
-        resolve(signedRawTx)
-      })
-    })
-  }
-
-  async sendRawTransaction(signedRawTx, networkName) {
-    if(!signedRawTx) throw('no signedRawTx')
-    if(!networkName) throw('no networkName')
-
-    console.log(signedRawTx)
-    if (!signedRawTx.startsWith('0x')) {
-      signedRawTx= '0x'+signedRawTx
-    }
-    return await this.web3s[networkName].eth.sendRawTransactionAsync(signedRawTx)
-  }
-
-  async sendTransaction(txObj,networkName){
-    if(!txObj) throw('no txObj')
-    if(!networkName) throw('no networkName')
-
-    let tx = new Transaction(txObj)
-    const rawTx = tx.serialize().toString('hex')
-    let signedRawTx = await this.signTx({txHex: rawTx, blockchain: networkName})
-    return await this.sendRawTransaction(signedRawTx,networkName);
-
-  }
 
 }
 

@@ -38,3 +38,26 @@ functions:
       - schedule:
           rate: rate(10 minutes)
           enabled: true
+  requestToken:
+    handler: src/api_handler.requestToken
+    description: Request Token for onboarding
+    events:
+     - http:
+         path: requestToken
+         method: post
+  createIdentity:
+    handler: src/api_handler.createIdentity
+    description: createIdentity on private network
+    timeout: 300
+    events:
+     - http:
+         path: createIdentity
+         method: post
+  relay:
+    handler: src/api_handler.relay
+    description: Relay handler
+    events:
+     - http:
+         path: relay
+         method: post
+
