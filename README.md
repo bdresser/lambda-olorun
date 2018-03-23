@@ -1,9 +1,8 @@
 # lambda-olorun
 uPort private network support
 
-<<<<<<< HEAD
 [![codecov](https://codecov.io/gh/uport-project/lambda-olorun/branch/master/graph/badge.svg)](https://codecov.io/gh/uport-project/lambda-olorun)
-=======
+
 ## Instalation
 
 ### Deploy contracts
@@ -14,7 +13,7 @@ optional deploy the ERC-780 compatible uport-registry , following the steps on h
 ### Configure network 
 Edit the `private-network.js` file and add a new entry for the network. Something like this:
 
-```json
+```
 0x3039: {
     rpcUrl: 'http://104.214.116.251:8545/',
     defaultGasPrice: 20000000000, // 20 Gwei
@@ -50,5 +49,3 @@ The following are the parameters to configure
 
 
 
-
->>>>>>> feature/refactor-network-params
