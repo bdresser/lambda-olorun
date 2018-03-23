@@ -13,7 +13,7 @@ optional deploy the ERC-780 compatible uport-registry , following the steps on h
 ### Configure network 
 Edit the `private-network.js` file and add a new entry for the network. Something like this:
 
-```
+```json
 0x3039: {
     rpcUrl: 'http://104.214.116.251:8545/',
     defaultGasPrice: 20000000000, // 20 Gwei
