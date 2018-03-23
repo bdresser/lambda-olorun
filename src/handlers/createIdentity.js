@@ -61,7 +61,7 @@ class CreateIdentityHandler {
             let identityOpts={
                 deviceKey: deviceKey,
                 managerType: 'MetaIdentityManager',
-                blockchain: networkName
+                blockchain: networkId
             }
             const {managerAddress,txHash} = await this.identityManagerMgr.createIdentity(identityOpts) 
             console.log("managerAddress:"+managerAddress)

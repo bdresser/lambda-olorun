@@ -10,12 +10,16 @@ const EthereumMgr = require('../ethereumMgr')
 describe('EthereumMgr', () => {
 
     let sut;
+    let blockchainMgr={
+        getSupportedNetworkIds: jest.fn()
+    };;
     let seed= 'kitten lemon sea enhance poem grid calm battle never summer night express'
     let validMetaSignedTx = 'f902268080831e848094326ba40a7d9951acd7414fa9d992dde2cd2ff90680b90204c3f44c0a000000000000000000000000000000000000000000000000000000000000001c41ee9c8324a88483cc81f0a5607c6a7aedb3528c211e4d8a2d37dd81f0c632c56d24858219d23e31bd0af8f5c0336c42881fbeff838c10f8c1dac3e4f8aba9950000000000000000000000009fa2369eebe2bd266ef14785fad6c8bed710c69600000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000104701b8826000000000000000000000000d9a943e9569cb4fab09f66f6fa1adf965ad57973000000000000000000000000ed7e78c43c8c86b45d24995017bd60a9dd45aa01000000000000000000000000cdb1d9895d1c28bb73260bdd49f2650ee5bd335d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024f207564e000000000000000000000000000000000000000000000000000000000007611600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c8080'
     let validSignedTx = 'f902660a63832dc6c094326ba40a7d9951acd7414fa9d992dde2cd2ff90680b90204c3f44c0a000000000000000000000000000000000000000000000000000000000000001c41ee9c8324a88483cc81f0a5607c6a7aedb3528c211e4d8a2d37dd81f0c632c56d24858219d23e31bd0af8f5c0336c42881fbeff838c10f8c1dac3e4f8aba9950000000000000000000000009fa2369eebe2bd266ef14785fad6c8bed710c69600000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000104701b8826000000000000000000000000d9a943e9569cb4fab09f66f6fa1adf965ad57973000000000000000000000000ed7e78c43c8c86b45d24995017bd60a9dd45aa01000000000000000000000000cdb1d9895d1c28bb73260bdd49f2650ee5bd335d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000024f207564e000000000000000000000000000000000000000000000000000000000007611600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001ba0aaaf27f6f21869b64ea2732030f1d96609a3d8be167951a0a8597f2c28c19d4ca04a5cbf3b3d5d4cf518b696027be3090d692836205a482e77483026e9f12521ff'
 
     beforeAll(() => {
-        sut = new EthereumMgr();
+        sut = new EthereumMgr(blockchainMgr);
+
     });
 
     test('empty constructor', () => {
@@ -72,24 +76,24 @@ describe('EthereumMgr', () => {
             })
         });
 
-        test('no networkName', (done) =>{
+        test('no networkId', (done) =>{
             sut.getBalance('address',null)
             .then((resp)=> {
                 fail("shouldn't return"); done()
             })
             .catch( (err)=>{
-                expect(err).toEqual('no networkName')
+                expect(err).toEqual('no networkId')
                 done()
             })
         });
 
-        test('no web3 for networkName', (done) =>{
+        test('no web3 for networkId', (done) =>{
             sut.getBalance('address','network')
             .then((resp)=> {
                 fail("shouldn't return"); done()
             })
             .catch( (err)=>{
-                expect(err).toEqual('no web3 for networkName')
+                expect(err).toEqual('no web3 for networkId')
                 done()
             })
         });
@@ -110,18 +114,18 @@ describe('EthereumMgr', () => {
 
 
     describe('getGasPrice()', () => {
-        test('no networkName', (done) =>{
+        test('no networkId', (done) =>{
             sut.getGasPrice(null)
             .then((resp)=> {
                 fail("shouldn't return"); done()
             })
             .catch( (err)=>{
-                expect(err).toEqual('no networkName')
+                expect(err).toEqual('no networkId')
                 done()
             })
         });
 
-        test('no web3 for networkName', (done) =>{
+        test('no web3 for networkId', (done) =>{
             sut.gasPrices['network']=99
             sut.getGasPrice('network')
             .then((resp)=> {
@@ -157,13 +161,13 @@ describe('EthereumMgr', () => {
             })
         });
 
-        test('no networkName', (done) =>{
+        test('no networkId', (done) =>{
             sut.getNonce('address',null)
             .then((resp)=> {
                 fail("shouldn't return"); done()
             })
             .catch( (err)=>{
-                expect(err).toEqual('no networkName')
+                expect(err).toEqual('no networkId')
                 done()
             })
         });

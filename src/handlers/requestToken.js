@@ -1,12 +1,13 @@
 
 class RequestTokenHandler {
-    constructor (uPortMgr) {
+    constructor (uPortMgr,blockchainMgr) {
       this.uPortMgr = uPortMgr
+      this.blockchainMgr = blockchainMgr
     }
   
     async handle(event,context, cb) {
 
-      const networkId='0x3039' //This can be read from the url? Hardcoded for now
+      const networkId=this.blockchainMgr.getDefaultNetworkId()
 
       try{
         let requestToken= await this.uPortMgr.requestToken(networkId);

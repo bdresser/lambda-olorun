@@ -2,6 +2,7 @@
 const AWS = require('aws-sdk');
 
 const UPortMgr = require('./lib/uPortMgr')
+const PrivateBlockchainMgr = require('./lib/privateBlockchainMgr')
 const EthereumMgr = require('./lib/ethereumMgr')
 const IdentityManagerMgr = require('./lib/identityManagerMgr')
 const MetaTxMgr = require('./lib/metaTxMgr')
@@ -11,10 +12,10 @@ const RequestTokenHandler = require('./handlers/requestToken')
 const CreateIdentityHandler = require('./handlers/createIdentity')
 const RelayHandler = require('./handlers/relay')
 
-
 let uPortMgr = new UPortMgr()
+let privateBlockchainMgr = new PrivateBlockchainMgr()
 let ethereumMgr = new EthereumMgr()
-let identityManagerMgr = new IdentityManagerMgr(ethereumMgr)
+let identityManagerMgr = new IdentityManagerMgr(ethereumMgr,privateBlockchainMgr)
 let metaTxMgr = new MetaTxMgr(ethereumMgr)
 
 let requestTokenHandler = new RequestTokenHandler(uPortMgr)
